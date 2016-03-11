@@ -3,10 +3,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Web;
-using System.Web.Caching;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using EPiServer;
+using EPiServer.Framework.Cache;
+using EPiServer.ServiceLocation;
 
 namespace Solita.Episerver.WebApi.Attributes
 {
@@ -16,7 +17,6 @@ namespace Solita.Episerver.WebApi.Attributes
     /// </summary>
     public class EpiserverWebApiOutputCacheAttribute : ActionFilterAttribute
     {
-        private static Cache Cache => HttpRuntime.Cache;
         private int DurationSeconds { get; }
 
         /// <summary>
@@ -50,7 +50,8 @@ namespace Solita.Episerver.WebApi.Attributes
             }
 
             var cachekey = CreateCacheKey(ac.Request);
-            var cachedValue = Cache[cachekey] as CacheValue;
+            var cache = GetCache();
+            var cachedValue = cache.Get(cachekey) as CacheValue;
 
             if (cachedValue == null)
             {
@@ -70,8 +71,9 @@ namespace Solita.Episerver.WebApi.Attributes
             }
 
             var cachekey = CreateCacheKey(ac.Request);
-
-            if (Cache[cachekey] == null)
+            var cache = GetCache();
+            
+            if (cache.Get(cachekey) == null)
             {
                 var value = new CacheValue
                 {
@@ -80,10 +82,10 @@ namespace Solita.Episerver.WebApi.Attributes
                     Result = ac.Response.Content.ReadAsStringAsync().Result
                 };
 
-                var dependency = (CacheDependencyKeys != null && CacheDependencyKeys.Any())
-                                 ? new CacheDependency(null, CacheDependencyKeys) 
-                                 : null;
-                Cache.Insert(cachekey, value, dependency, DateTime.Now.AddSeconds(DurationSeconds), Cache.NoSlidingExpiration, CacheItemPriority.Default, null);
+                var evictionPolicy = (CacheDependencyKeys != null && CacheDependencyKeys.Any())
+                                     ? new CacheEvictionPolicy(CacheDependencyKeys, TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute)
+                                     : null;
+                cache.Insert(cachekey, value, evictionPolicy);
             }
         }
 
@@ -106,6 +108,11 @@ namespace Solita.Episerver.WebApi.Attributes
         {
             const string cacheKeyBase = "Solita:EpiserverWebApiOutputCacheAttribute#";
             return cacheKeyBase + request.RequestUri.AbsoluteUri;
+        }
+
+        private static IObjectInstanceCache GetCache()
+        {
+            return ServiceLocator.Current.GetInstance<IObjectInstanceCache>();
         }
         
         private class CacheValue
