@@ -72,7 +72,7 @@ namespace Solita.Episerver.WebApi.Attributes
 
             var cachekey = CreateCacheKey(ac.Request);
             var cache = GetCache();
-            
+
             if (cache.Get(cachekey) == null)
             {
                 var value = new CacheValue
@@ -82,15 +82,13 @@ namespace Solita.Episerver.WebApi.Attributes
                     Result = ac.Response.Content.ReadAsStringAsync().Result
                 };
 
-                var evictionPolicy = (CacheDependencyKeys != null && CacheDependencyKeys.Any())
-                                     ? new CacheEvictionPolicy(CacheDependencyKeys, TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute)
-                                     : null;
+                var evictionPolicy = CreateCacheEvictionPolicy();
                 cache.Insert(cachekey, value, evictionPolicy);
             }
         }
 
         private bool IsCacheable(HttpMethod method)
-        {            
+        {
             if (!EnableInDebug && HttpContext.Current.IsDebuggingEnabled)
             {
                 return false;
@@ -104,6 +102,24 @@ namespace Solita.Episerver.WebApi.Attributes
             return (DurationSeconds > 0) && (method == HttpMethod.Get);
         }
 
+        private CacheEvictionPolicy CreateCacheEvictionPolicy()
+        {
+            if (CacheDependencyKeys == null || !CacheDependencyKeys.Any())
+            {
+                return null;
+            }
+
+            // If DataFactoryCache.VersionKey is used as a dependency the key must exists in the cache. 
+            // Otherwise entries are not cached. The key is removed when a remote server content is updated. 
+            if (CacheDependencyKeys.Contains(DataFactoryCache.VersionKey))
+            {
+                // Version call ensures that the key is present
+                var version = DataFactoryCache.Version;
+            }
+
+            return new CacheEvictionPolicy(CacheDependencyKeys, TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute);
+        }
+
         private static string CreateCacheKey(HttpRequestMessage request)
         {
             const string cacheKeyBase = "Solita:EpiserverWebApiOutputCacheAttribute#";
@@ -114,7 +130,7 @@ namespace Solita.Episerver.WebApi.Attributes
         {
             return ServiceLocator.Current.GetInstance<IObjectInstanceCache>();
         }
-        
+
         private class CacheValue
         {
             public string ContentType { get; set; }
