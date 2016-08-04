@@ -30,12 +30,11 @@ namespace Solita.Episerver.WebApi
         
         public object GetService(Type serviceType)
         {
-            if (serviceType.IsClass || serviceType.IsAbstract)
+            if (serviceType.IsInterface || serviceType.IsAbstract)
             {
-                return GetConcreteService(serviceType);
+                return GetInterfaceService(serviceType);
             }
-
-            return GetInterfaceService(serviceType);
+            return GetConcreteService(serviceType);
         }
 
         private object GetConcreteService(Type serviceType)
@@ -45,17 +44,8 @@ namespace Solita.Episerver.WebApi
                 // Can't use TryGetInstance here because it won’t create concrete types
                 return _container.GetInstance(serviceType);
             }
-            catch (StructureMapException ex)
+            catch (StructureMapException)
             {
-                // If exception contains information about actual exception, rethrow
-                if (ex.InnerException != null)
-                {
-                    throw;
-                }
-
-                // Some exceptions will happen because of framework. default to null.
-                // e.g."No default Instance is registered and cannot be automatically determined 
-                //      for type 'System.Web.Http.Hosting.IHostBufferPolicySelector.."
                 return null;
             }
         }
