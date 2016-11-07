@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Solita.Episerver.WebApi")]
-[assembly: AssemblyDescription("Web API toolkit for Episerver 9 to boost productivity and performance.")]
+[assembly: AssemblyDescription("Web API toolkit for Episerver 10 to boost productivity and performance.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Solita Oy")]
 [assembly: AssemblyProduct("Solita.Episerver.WebApi")]
