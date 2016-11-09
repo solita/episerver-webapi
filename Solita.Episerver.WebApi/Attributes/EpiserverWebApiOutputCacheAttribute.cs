@@ -118,14 +118,6 @@ namespace Solita.Episerver.WebApi.Attributes
                 CacheDependencyKeys = CacheDependencyKeys.Select(x => x.Replace(DataFactoryCacheKeyPlaceholder,keyCreator.VersionKey)).ToArray();
             }
 
-            // If DataFactoryCache.VersionKey is used as a dependency the key must exists in the cache. 
-            // Otherwise entries are not cached. The key is removed when a remote server content is updated. 
-            if (CacheDependencyKeys.Contains(keyCreator.VersionKey))
-            {
-                // Version call ensures that the key is present
-                var version = ServiceLocator.Current.GetInstance<IContentCacheVersion>().Version;
-            }
-
             return new CacheEvictionPolicy(TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute, CacheDependencyKeys);             
         }
 
