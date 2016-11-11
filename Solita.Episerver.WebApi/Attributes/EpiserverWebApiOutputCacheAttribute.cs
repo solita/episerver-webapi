@@ -35,7 +35,7 @@ namespace Solita.Episerver.WebApi.Attributes
         /// By default, contains "{ DataFactoryCache.VersionKey }". 
         /// Set to null or empty array to disable the Episerver content cache dependency altogether, or add custom dependencies.
         /// </summary>
-        public string[] CacheDependencyKeys { get; set; } = {DataFactoryCacheKeyPlaceholder};
+        public string[] CacheDependencyKeys { get; set; } = { DataFactoryCacheKeyPlaceholder };
 
 
         /// <param name="durationSeconds">Cache duration in seconds</param>
@@ -59,7 +59,7 @@ namespace Solita.Episerver.WebApi.Attributes
             {
                 return;
             }
-             
+
             ac.Response = ac.Request.CreateResponse();
             ac.Response.Content = new StringContent(cachedValue.Result);
             ac.Response.Content.Headers.ContentType = new MediaTypeHeaderValue(cachedValue.ContentType) { CharSet = cachedValue.Charset };
@@ -113,12 +113,20 @@ namespace Solita.Episerver.WebApi.Attributes
 
             var keyCreator = ServiceLocator.Current.GetInstance<IContentCacheKeyCreator>();
             if (CacheDependencyKeys.Contains(DataFactoryCacheKeyPlaceholder))
-            {                
+            {
                 //Replace the placeholder variable with the actual datafactory key. This is done only once
-                CacheDependencyKeys = CacheDependencyKeys.Select(x => x.Replace(DataFactoryCacheKeyPlaceholder,keyCreator.VersionKey)).ToArray();
+                CacheDependencyKeys = CacheDependencyKeys.Select(x => x.Replace(DataFactoryCacheKeyPlaceholder, keyCreator.VersionKey)).ToArray();
             }
 
-            return new CacheEvictionPolicy(TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute, CacheDependencyKeys);             
+            // If "DataFactoryCache.Version" key is used as a dependency the key must exists in the cache. 
+            // Otherwise entries are not cached. The key is removed when a remote server content is updated. 
+            if (CacheDependencyKeys.Contains(keyCreator.VersionKey))
+            {
+                // Version call ensures that the key is present
+                var version = ServiceLocator.Current.GetInstance<IContentCacheVersion>().Version;
+            }
+
+            return new CacheEvictionPolicy(TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute, CacheDependencyKeys);
         }
 
         private static string CreateCacheKey(HttpRequestMessage request)
