@@ -108,7 +108,7 @@ namespace Solita.Episerver.WebApi.Attributes
         {
             if (CacheDependencyKeys == null || !CacheDependencyKeys.Any())
             {
-                return null;
+                return new CacheEvictionPolicy(TimeSpan.FromSeconds(DurationSeconds), CacheTimeoutType.Absolute);
             }
 
             var keyCreator = ServiceLocator.Current.GetInstance<IContentCacheKeyCreator>();
