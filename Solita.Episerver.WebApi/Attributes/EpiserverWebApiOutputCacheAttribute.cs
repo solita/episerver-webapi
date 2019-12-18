@@ -67,7 +67,7 @@ namespace Solita.Episerver.WebApi.Attributes
 
         public override void OnActionExecuted(HttpActionExecutedContext ac)
         {
-            if (!IsCacheable(ac.Request.Method) || ac.Exception != null)
+            if (!IsCacheable(ac.Request.Method) || ac.Exception != null || !ac.Response.IsSuccessStatusCode)
             {
                 return;
             }
